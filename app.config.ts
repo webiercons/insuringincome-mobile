@@ -41,6 +41,14 @@ export default (): ExpoConfig => {
       'expo-dev-client',
       'expo-apple-authentication',
       [
+        'expo-notifications',
+        {
+          icon: './assets/images/icon.png',
+          color: '#1a2b45',
+          enableBackgroundRemoteNotifications: false,
+        },
+      ],
+      [
         'expo-splash-screen',
         {
           image: './assets/images/splash-icon.png',

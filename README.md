@@ -18,6 +18,13 @@ Internal-only authenticated iPhone app for operators. Ships with **EAS Build / E
 
 See `../insuringincome/docs/env/internal-mobile.md` for the matching Laravel `INTERNAL_MOBILE_*` environment keys.
 
+## Documentation (internal mobile)
+
+| Doc | Purpose |
+|-----|---------|
+| `docs/internal-mobile-dependency-roadmap.md` | OTA-first architecture, phased dependencies, OTA vs native-build matrix. |
+| `docs/internal-mobile-release-runbook.md` | EAS Build / Submit / Update commands, channels, rollback notes. |
+
 ## Local development
 
 ```bash
@@ -32,7 +39,10 @@ Use the iOS simulator or a device; the app does not target localhost/Herd for pr
 ```bash
 npm run lint
 npm run typecheck
+npm run bundle:check
 ```
+
+`bundle:check` runs `expo export` to validate the JS bundle (output under `dist/`, gitignored).
 
 ## EAS Build profiles (`eas.json`)
 
@@ -68,18 +78,29 @@ Submit only when you intend to; this repo does not automate submission.
 ## OTA updates (EAS Update)
 
 - `runtimeVersion` uses the **`appVersion` policy** (see `app.config.ts`), so OTA payloads apply only to binaries with the same `expo.version`.
-- Each build profile sets a **channel** (`preview`, `testflight`, `production`, `development`) in `eas.json`.
-- Publishing an update (example — run only when you explicitly want to publish):
+- Each build profile sets an **update channel** (`preview`, `testflight`, `production`, `development`) in `eas.json` (`build.*.channel`). Publish OTA bundles to the **same channel** as the installed binary (see runbook).
+- **Settings → Diagnostics** shows the live **EAS Update channel**, runtime version, current update id, and **Check for OTA update** (reload only after user confirmation).
+- npm shortcuts (pass `--message "…"` when EAS requires it):
 
   ```bash
-  eas update --channel testflight --message "Describe the change"
+  npm run ota:preview -- --message "Describe the change"
+  npm run ota:testflight -- --message "Describe the change"
+  npm run ota:production -- --message "Describe the change"
+  npm run ota:list:preview
   ```
 
 This workspace does not run publish/submit commands unless you ask.
 
-## Native rebuild warning
+## Native rebuild vs OTA (mandatory rule)
 
-If you change native code, permissions, plugins, `runtimeVersion` policy, or anything that alters the native project, you **must** create a new EAS build. OTA updates cannot replace native changes.
+| Ship via **EAS Update (OTA)** | Requires **new EAS build / TestFlight** |
+|-------------------------------|----------------------------------------|
+| JavaScript / TypeScript, screens, navigation, styles, copy | New native dependency or **config plugin** (for example adding or changing `expo-notifications` plugin options) |
+| API client, auth flow in JS, SecureStore usage | `app.config` plugins, permissions, entitlements, icons, splash |
+| Most bundled assets referenced from JS | `expo.version` or `runtimeVersion` policy change, bundle identifier |
+| Bugfixes that touch only JS | `newArchEnabled`, Hermes, native project changes |
+
+**Rule of thumb:** if it changes the native binary or the OTA runtime contract, rebuild; otherwise prefer OTA on the correct **channel**.
 
 ## Apple Developer / App Store Connect checklist
 
