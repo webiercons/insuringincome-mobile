@@ -22,6 +22,7 @@
     "testflight": {
       "distribution": "store",
       "channel": "testflight",
+      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_APP_CHANNEL": "testflight"
       },
