@@ -1,50 +1,97 @@
-# Welcome to your Expo app 👋
+# Insuring Income — Internal Mobile (Expo)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Internal-only authenticated iPhone app for operators. Ships with **EAS Build / EAS Submit** to **TestFlight**, with **EAS Update** for JavaScript OTA on matching channels.
 
-## Get started
+## Prerequisites
 
-1. Install dependencies
+- Node.js and npm (this repo uses npm / `package-lock.json`).
+- Expo account and [EAS CLI](https://docs.expo.dev/build/setup/) logged in (`eas login`).
+- Apple Developer Program access and an App Store Connect app record for the iOS bundle identifier.
 
-   ```bash
-   npm install
-   ```
+## Configuration
 
-2. Start the app
+1. Copy `.env.example` to `.env` for local development.
+2. Set `EXPO_PUBLIC_API_BASE_URL` to your **deployed** Laravel API origin (HTTPS, no secrets in git).
+3. Configure **Google** client IDs (`EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`) so operators can use **Continue with Google**. Apple sign-in uses the system button on iOS with your bundle ID (enable the capability in Apple Developer / App Store Connect).
+4. Internal mobile auth calls Laravel at **`/api/v1/internal-mobile/*`**: Google / Apple (or optional password when `EXPO_PUBLIC_INTERNAL_MOBILE_PASSWORD_AUTH_ENABLED=true` **and** the server enables `INTERNAL_MOBILE_PASSWORD_AUTH_ENABLED`), then refresh and bootstrap. Access and refresh tokens are stored in **Expo SecureStore** (not AsyncStorage).
+5. New devices can remain in a **pending approval** state until a super admin approves them in the operator Filament UI; the app shows a dedicated screen until access unlocks.
 
-   ```bash
-   npx expo start
-   ```
+See `../insuringincome/docs/env/internal-mobile.md` for the matching Laravel `INTERNAL_MOBILE_*` environment keys.
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Local development
 
 ```bash
-npm run reset-project
+npm install
+cp .env.example .env
+# edit .env with your deployed API base URL
+npm run start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Use the iOS simulator or a device; the app does not target localhost/Herd for production workflows.
 
-## Learn more
+```bash
+npm run lint
+npm run typecheck
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## EAS Build profiles (`eas.json`)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+| Profile        | Purpose                                      | EAS Update channel |
+|----------------|----------------------------------------------|--------------------|
+| `development`  | Dev client, internal distribution            | `development`      |
+| `preview`      | Internal distribution (no TestFlight)      | `preview`          |
+| `testflight`   | App Store / TestFlight binary                | `testflight`       |
+| `production`   | Reserved store-ready release (manual use)  | `production`       |
 
-## Join the community
+Bundle identifiers are placeholders in `app.config.ts` (`com.insuringincome.internal.app`). Update them to your Apple-registered IDs before shipping.
 
-Join our community of developers creating universal apps.
+## TestFlight build
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Configure iOS credentials and bundle ID in Expo / Apple portals, then:
+
+```bash
+eas build --platform ios --profile testflight
+```
+
+Do **not** commit signing secrets; use EAS credentials and environment variables in the Expo dashboard when needed.
+
+## TestFlight submit
+
+After a successful build:
+
+```bash
+eas submit --platform ios --profile testflight --latest
+```
+
+Submit only when you intend to; this repo does not automate submission.
+
+## OTA updates (EAS Update)
+
+- `runtimeVersion` uses the **`appVersion` policy** (see `app.config.ts`), so OTA payloads apply only to binaries with the same `expo.version`.
+- Each build profile sets a **channel** (`preview`, `testflight`, `production`, `development`) in `eas.json`.
+- Publishing an update (example — run only when you explicitly want to publish):
+
+  ```bash
+  eas update --channel testflight --message "Describe the change"
+  ```
+
+This workspace does not run publish/submit commands unless you ask.
+
+## Native rebuild warning
+
+If you change native code, permissions, plugins, `runtimeVersion` policy, or anything that alters the native project, you **must** create a new EAS build. OTA updates cannot replace native changes.
+
+## Apple Developer / App Store Connect checklist
+
+- [ ] Register the bundle identifier in the Apple Developer portal (matches `ios.bundleIdentifier` in `app.config.ts`).
+- [ ] Create an App Store Connect app with the same bundle ID.
+- [ ] Enable TestFlight for the bundle; complete export compliance and beta review requirements as needed.
+- [ ] Generate or link signing certificates and provisioning profiles (EAS can manage this).
+- [ ] Add internal testers and distribution groups in App Store Connect.
+- [ ] Store API keys and Apple credentials outside the repo (EAS Secrets / CI variables).
+
+## Security notes
+
+- Access and refresh tokens live in **Expo Secure Store** (iOS keychain / Android Keystore-backed secure storage), not AsyncStorage.
+- **401** responses from authenticated `apiRequest` calls attempt one **refresh-token rotation**, then clear storage and return operators to the login screen. **403** is treated as authorization or feature gating (for example a pending device) and does **not** automatically sign the user out.
+- No secrets belong in git; use `.env` locally and EAS environment variables for cloud builds.

@@ -1,0 +1,19 @@
+import { StyleSheet, Text } from 'react-native';
+
+import { ScreenShell } from '@/components/internal/screen-shell';
+
+export default function RickAiScreen() {
+  return (
+    <ScreenShell title="RickAI" subtitle="Internal copilots and automations">
+      <Text style={styles.body}>Placeholder: connect RickAI chat or task flows with audited logging.</Text>
+    </ScreenShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  body: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#334155',
+  },
+});
