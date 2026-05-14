@@ -26,7 +26,7 @@ export default function DevicePendingScreen() {
 
   useEffect(() => {
     if (mobileAccess === 'full') {
-      router.replace('/(app)/(tabs)/dashboard');
+      router.replace('/(internal)/(tabs)/dashboard');
     }
   }, [mobileAccess]);
 
@@ -39,7 +39,7 @@ export default function DevicePendingScreen() {
   );
 
   return (
-    <ScreenShell title="Device awaiting approval" subtitle="Internal security">
+    <ScreenShell title="Device awaiting approval" subtitle="Operator device security">
       <Text style={styles.lead}>
         This installation is signed in, but a super administrator must approve this device before sensitive
         operator tools unlock.

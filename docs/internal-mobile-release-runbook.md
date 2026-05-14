@@ -4,6 +4,8 @@ Operational guide for **EAS Build**, **EAS Submit**, and **EAS Update** (OTA) fo
 
 The app sets **`updates.checkAutomatically` to `NEVER`** in `app.config.ts`: operators **manually** check for updates from **Settings** so nothing downloads or reloads during sensitive work without explicit confirmation.
 
+Cold start sends signed-out users to the **public** tab shell (`/(public)/(tabs)`). Signed-in operators with approved devices land in **`/(internal)/(tabs)`** (see `app/index.tsx`).
+
 ## Branch / channel map
 
 | Git branch (recommended) | EAS Update **channel** | Typical **EAS Build** profile |
@@ -19,7 +21,17 @@ Publishing OTA updates should use **matching branch + channel** names to avoid m
 eas update --branch preview --channel preview --message "Your summary"
 ```
 
+## EAS build profiles & operator API URL
+
+`eas.json` sets **`EXPO_PUBLIC_API_BASE_URL=https://app.insuringincome.com`** for **`preview`**, **`testflight`**, and **`production`** profiles so TestFlight and internal distribution builds call the live Laravel API without baking secrets.
+
+**`development`** does **not** set the URL: use `.env` locally (see `.env.example`).
+
+Override per profile only when intentionally pointing a build at staging.
+
 ## New native binary (TestFlight / store)
+
+Use this flow for the **first real operator authentication test** and every native-affecting change.
 
 When you change anything **native-build-required** (see `docs/internal-mobile-dependency-roadmap.md`):
 
@@ -28,6 +40,8 @@ eas build --platform ios --profile testflight
 # After QA:
 eas submit --platform ios --profile testflight --latest
 ```
+
+After the first TestFlight build is in App Store Connect, confirm **Sign in with Apple** is enabled on the App ID for `com.insuringincome.internal.app`, and that **Google OAuth client IDs** (if used) are supplied via EAS env or secrets for that profile.
 
 Bump **`expo.version`** in `app.config.ts` when you intentionally cut a new **runtime** line for OTA (with `runtimeVersion: { policy: 'appVersion' }`, OTAs only apply to binaries with that same version).
 
@@ -41,7 +55,7 @@ This matches the current app: **HTTPS only**, no proprietary crypto. **If a futu
 
 Changes under `assets/images/` that feed **`app.config.ts`** (`icon`, `web.favicon`, `android.adaptiveIcon`, **`expo-splash-screen`**, **`expo-notifications`**) are **native-build-required**: cut a **new EAS iOS build** and distribute via TestFlight before operators see them. OTA can still refresh in-app UI and JS-loaded images, but the store icon, launch splash, and Android notification glyph ship with the binary.
 
-Regenerate committed **placeholder** rasters with `python3 scripts/generate-internal-branding-placeholders.py` after palette tweaks. Replace with final marketing assets per `docs/branding/native-shell-assets.md`.
+Regenerate committed **palette-based** rasters with `python3 scripts/generate-internal-branding-placeholders.py` after visual tweaks. Replace with final marketing exports **keeping the same filenames** so `app.config.ts` stays stable — see dimensions in `docs/branding/native-shell-assets.md`.
 
 ## Publish OTA (no native change)
 

@@ -1,6 +1,6 @@
 # Internal mobile — dependency roadmap & OTA-first architecture
 
-This document aligns the **Insuring Income** internal mobile app (Expo) dependencies with an **OTA-first** delivery model: ship JS, navigation, styling, copy, and most asset changes via **EAS Update**; reserve **EAS Build / TestFlight** for native surface changes.
+This document aligns the **Insuring Income** mobile app (Expo) dependencies with an **OTA-first** delivery model: ship JS, navigation, styling, copy, and most asset changes via **EAS Update**; reserve **EAS Build / TestFlight** for native surface changes.
 
 ## Principles
 
@@ -24,6 +24,7 @@ This document aligns the **Insuring Income** internal mobile app (Expo) dependen
 | New `expo install` package with **config plugin** / native module | No | **Yes** |
 | `plugins` / permissions / entitlements / Info.plist | No | **Yes** |
 | `newArchEnabled`, Hermes, splash, **app icon**, bundle ID | No | **Yes** |
+| New route groups (`(public)`, `(internal)`) that only change JS | Yes | No — but run **`npm run router:types`** when `experiments.typedRoutes` is on |
 | `runtimeVersion` policy or `expo.version` bump | No | **Yes** (new binary lineage) |
 | Push: first-time APNs entitlements / Google services setup | No | **Yes** (then tokens via OTA JS) |
 

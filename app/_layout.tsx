@@ -43,8 +43,9 @@ function RootNavigation() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="(public)" />
         <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(app)" />
+        <Stack.Screen name="(internal)" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

@@ -16,9 +16,11 @@ import {
   getStoredInternalMobileSession,
   setStoredInternalMobileSession,
 } from '@/lib/auth-storage';
-import { buildInternalMobileDevicePayload } from '@/lib/device-metadata';
+import { buildInternalMobileDevicePayload, type InternalMobileDevicePayload } from '@/lib/device-metadata';
+import { clearPendingInternalAuth, getPendingMfa, getPendingSsoLink, setPendingMfa, setPendingSsoLink, clearPendingMfa, clearPendingSsoLink } from '@/lib/internal-auth-pending';
 import { getExtra } from '@/lib/env';
 import { getInternalMobile, postInternalMobile } from '@/lib/internal-mobile-api';
+import { isAuthenticatedExchange, parseAuthExchangeBody } from '@/lib/internal-mobile-auth-response';
 import { getOrCreateInstallationId } from '@/lib/installation-id';
 
 export type MobileAccess = 'none' | 'unknown' | 'restricted_pending_device' | 'full';
@@ -40,6 +42,8 @@ type AuthContextValue = {
   signInWithPassword: (email: string, password: string) => Promise<void>;
   signInWithGoogleIdToken: (idToken: string) => Promise<void>;
   signInWithAppleIdentityToken: (identityToken: string) => Promise<void>;
+  /** Completes login after `/auth/link-sso` or `/auth/mfa-verify` (handles chained MFA). */
+  completeAuthExchange: (body: unknown) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -57,6 +61,7 @@ function parseMobileAccess(payload: unknown): MobileAccess {
   if (app && typeof app === 'object') {
     const posture = (app as Record<string, unknown>).posture;
     if (posture === 'internal_only') {
+      // Server grants operator tools (distinct from consumer-only posture when added later).
       return 'full';
     }
   }
@@ -143,13 +148,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
     try {
-      const body = await postInternalMobile<IssuedTokens>(
+      const body = await postInternalMobile<unknown>(
         '/auth/refresh',
         { refresh_token: rt },
         null,
       );
-      await persistSession(body.access_token, body.refresh_token);
-      await hydrateBootstrap(body.access_token);
+      const parsed = parseAuthExchangeBody(body);
+      if (!parsed || !isAuthenticatedExchange(parsed)) {
+        return false;
+      }
+      await persistSession(parsed.access_token, parsed.refresh_token);
+      await hydrateBootstrap(parsed.access_token);
       return true;
     } catch {
       return false;
@@ -172,7 +181,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRefreshTokenState(null);
     setMobileAccess('none');
     setUserSummary(null);
-    router.replace('/(auth)/login');
+    clearPendingInternalAuth();
+    router.replace('/(public)/(tabs)' as Href);
   }, []);
 
   useEffect(() => {
@@ -211,13 +221,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (next === 'none') {
         try {
-          const body = await postInternalMobile<IssuedTokens>(
+          const body = await postInternalMobile<unknown>(
             '/auth/refresh',
             { refresh_token: stored.refreshToken },
             null,
           );
-          await persistSession(body.access_token, body.refresh_token);
-          next = await hydrateBootstrap(body.access_token);
+          const parsed = parseAuthExchangeBody(body);
+          if (!parsed || !isAuthenticatedExchange(parsed)) {
+            throw new Error('Invalid refresh response');
+          }
+          await persistSession(parsed.access_token, parsed.refresh_token);
+          next = await hydrateBootstrap(parsed.access_token);
         } catch {
           await clearStoredInternalMobileSession();
           accessRef.current = null;
@@ -246,11 +260,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const navigateAfterBootstrap = useCallback((next: MobileAccess) => {
     if (next === 'restricted_pending_device') {
-      router.replace('/(app)/device-pending' as Href);
+      router.replace('/(internal)/device-pending' as Href);
       return;
     }
-    if (next === 'full') {
-      router.replace('/(app)/(tabs)/dashboard');
+    if (next === 'full' || next === 'unknown') {
+      router.replace('/(internal)/(tabs)/dashboard');
     }
   }, []);
 
@@ -263,20 +277,102 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [hydrateBootstrap, navigateAfterBootstrap, persistSession],
   );
 
+  const routeAuthExchangeSideEffects = useCallback(
+    async (device: InternalMobileDevicePayload, body: unknown) => {
+      const parsed = parseAuthExchangeBody(body);
+      if (!parsed) {
+        throw new Error('Unexpected authentication response from server.');
+      }
+      if (parsed.auth_state === 'sso_link_required') {
+        if (!parsed.sso_assertion || !parsed.provider) {
+          throw new Error('Missing SSO link payload from server.');
+        }
+        setPendingSsoLink({
+          assertion: parsed.sso_assertion,
+          provider: parsed.provider,
+          maskedEmail: parsed.masked_email ?? '',
+          device,
+        });
+        router.push('/(auth)/link-work-account' as Href);
+        return;
+      }
+      if (parsed.auth_state === 'mfa_required') {
+        if (!parsed.mfa_challenge_id) {
+          throw new Error('Missing MFA challenge from server.');
+        }
+        setPendingMfa({
+          challengeId: parsed.mfa_challenge_id,
+          hint: parsed.hint ?? '',
+          device,
+        });
+        router.push('/(auth)/mfa-challenge' as Href);
+        return;
+      }
+      if (isAuthenticatedExchange(parsed)) {
+        await applyIssuedTokensThenNavigate({
+          access_token: parsed.access_token,
+          refresh_token: parsed.refresh_token,
+        });
+        return;
+      }
+      throw new Error('Unsupported authentication state from server.');
+    },
+    [applyIssuedTokensThenNavigate],
+  );
+
+  const completeAuthExchange = useCallback(
+    async (body: unknown) => {
+      const parsed = parseAuthExchangeBody(body);
+      if (!parsed) {
+        throw new Error('Unexpected authentication response from server.');
+      }
+      if (parsed.auth_state === 'mfa_required') {
+        if (!parsed.mfa_challenge_id) {
+          throw new Error('Missing MFA challenge from server.');
+        }
+        const fromSso = getPendingSsoLink();
+        const fromMfa = getPendingMfa();
+        const device = fromSso?.device ?? fromMfa?.device;
+        if (!device) {
+          throw new Error('MFA challenge is missing device context. Sign in again.');
+        }
+        setPendingMfa({
+          challengeId: parsed.mfa_challenge_id,
+          hint: parsed.hint ?? '',
+          device,
+        });
+        clearPendingSsoLink();
+        router.replace('/(auth)/mfa-challenge' as Href);
+        return;
+      }
+      if (isAuthenticatedExchange(parsed)) {
+        clearPendingSsoLink();
+        clearPendingMfa();
+        await applyIssuedTokensThenNavigate({
+          access_token: parsed.access_token,
+          refresh_token: parsed.refresh_token,
+        });
+        return;
+      }
+      throw new Error('Unsupported authentication state from server.');
+    },
+    [applyIssuedTokensThenNavigate],
+  );
+
   const signInWithGoogleIdToken = useCallback(
     async (idToken: string) => {
       if (!getExtra().apiBaseUrl) {
         throw new Error('Missing EXPO_PUBLIC_API_BASE_URL. Add it to your .env before signing in.');
       }
       const device = await buildDevicePayload();
-      const body = await postInternalMobile<IssuedTokens>(
+      const body = await postInternalMobile<unknown>(
         '/auth/google',
         { id_token: idToken, device },
         null,
       );
-      await applyIssuedTokensThenNavigate(body);
+      await routeAuthExchangeSideEffects(device, body);
     },
-    [applyIssuedTokensThenNavigate, buildDevicePayload],
+    [buildDevicePayload, routeAuthExchangeSideEffects],
   );
 
   const signInWithAppleIdentityToken = useCallback(
@@ -285,14 +381,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Missing EXPO_PUBLIC_API_BASE_URL. Add it to your .env before signing in.');
       }
       const device = await buildDevicePayload();
-      const body = await postInternalMobile<IssuedTokens>(
+      const body = await postInternalMobile<unknown>(
         '/auth/apple',
         { identity_token: identityToken, device },
         null,
       );
-      await applyIssuedTokensThenNavigate(body);
+      await routeAuthExchangeSideEffects(device, body);
     },
-    [applyIssuedTokensThenNavigate, buildDevicePayload],
+    [buildDevicePayload, routeAuthExchangeSideEffects],
   );
 
   const signInWithPassword = useCallback(
@@ -305,14 +401,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Password sign-in is not enabled for this build.');
       }
       const device = await buildDevicePayload();
-      const body = await postInternalMobile<IssuedTokens>(
+      const body = await postInternalMobile<unknown>(
         '/auth/password',
         { email: email.trim(), password, device },
         null,
       );
-      await applyIssuedTokensThenNavigate(body);
+      await routeAuthExchangeSideEffects(device, body);
     },
-    [applyIssuedTokensThenNavigate, buildDevicePayload],
+    [buildDevicePayload, routeAuthExchangeSideEffects],
   );
 
   const syncBootstrap = useCallback(async () => {
@@ -323,7 +419,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const prev = mobileAccessRef.current;
     const next = await hydrateBootstrap(at);
     if (prev === 'restricted_pending_device' && next === 'full') {
-      router.replace('/(app)/(tabs)/dashboard');
+      router.replace('/(internal)/(tabs)/dashboard');
     }
   }, [hydrateBootstrap]);
 
@@ -337,10 +433,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       signInWithGoogleIdToken,
       signInWithAppleIdentityToken,
+      completeAuthExchange,
       signOut,
     }),
     [
       accessToken,
+      completeAuthExchange,
       isReady,
       mobileAccess,
       signInWithAppleIdentityToken,

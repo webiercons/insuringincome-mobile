@@ -12,7 +12,7 @@ export default function AppLayout() {
       return;
     }
     if (mobileAccess === 'restricted_pending_device') {
-      router.replace('/(app)/device-pending' as Href);
+      router.replace('/(internal)/device-pending' as Href);
     }
   }, [isReady, token, mobileAccess, router]);
 
@@ -21,7 +21,7 @@ export default function AppLayout() {
   }
 
   if (!token) {
-    return <Redirect href="/(auth)/login" />;
+    return <Redirect href="/(public)/(tabs)" />;
   }
 
   return (

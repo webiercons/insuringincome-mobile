@@ -1,3 +1,4 @@
+import { type Href, Link, Redirect } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,8 +17,10 @@ import { InternalColors } from '@/constants/internal-theme';
 import { useAuth } from '@/contexts/auth-context';
 import { getExtra } from '@/lib/env';
 
+const PUBLIC_HOME: Href = '/(public)/(tabs)';
+
 export default function LoginScreen() {
-  const { signInWithPassword, signInWithAppleIdentityToken } = useAuth();
+  const { signInWithPassword, signInWithAppleIdentityToken, token, isReady, mobileAccess } = useAuth();
   const extra = useMemo(() => getExtra(), []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +32,16 @@ export default function LoginScreen() {
     (Platform.OS === 'ios' && !!extra.googleIosClientId) ||
     (Platform.OS === 'android' && (!!extra.googleAndroidClientId || !!extra.googleWebClientId)) ||
     (Platform.OS === 'web' && !!extra.googleWebClientId);
+
+  if (!isReady) {
+    return null;
+  }
+  if (token) {
+    if (mobileAccess === 'restricted_pending_device') {
+      return <Redirect href="/(internal)/device-pending" />;
+    }
+    return <Redirect href="/(internal)/(tabs)/dashboard" />;
+  }
 
   async function onSubmitPassword() {
     setError(null);
@@ -82,10 +95,10 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.card}>
         <Text style={styles.brand}>Insuring Income</Text>
-        <Text style={styles.lockLabel}>Internal access</Text>
+        <Text style={styles.lockLabel}>Advisor & team login</Text>
         <Text style={styles.helper}>
           {extra.apiBaseUrl
-            ? 'Sign in with your approved work identity. Tokens stay in the device secure enclave.'
+            ? 'Sign in with your approved work identity to open operator tools. Session tokens stay in the device secure enclave.'
             : 'Configure EXPO_PUBLIC_API_BASE_URL before signing in.'}
         </Text>
 
@@ -121,7 +134,7 @@ export default function LoginScreen() {
           <>
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerLabel}>Password (internal only)</Text>
+              <Text style={styles.dividerLabel}>Password (operators)</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -167,6 +180,12 @@ export default function LoginScreen() {
         ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <Link href={PUBLIC_HOME} asChild>
+          <Pressable style={({ pressed }) => [styles.textLinkWrap, pressed && styles.textLinkPressed]}>
+            <Text style={styles.textLink}>← Consumer app & education</Text>
+          </Pressable>
+        </Link>
       </View>
     </KeyboardAvoidingView>
   );
@@ -280,5 +299,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: InternalColors.danger,
     fontSize: 14,
+  },
+  textLinkWrap: {
+    marginTop: 16,
+    paddingVertical: 8,
+    alignSelf: 'center',
+  },
+  textLinkPressed: {
+    opacity: 0.8,
+  },
+  textLink: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: InternalColors.accentMuted,
   },
 });

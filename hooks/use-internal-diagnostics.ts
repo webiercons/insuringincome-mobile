@@ -5,7 +5,13 @@ import * as Updates from 'expo-updates';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 
+import { getExtra } from '@/lib/env';
+
 export type DiagnosticsSnapshot = {
+  /** Marketing name from app config (home screen / TestFlight label source). */
+  appDisplayName: string;
+  /** Operator API origin from EXPO_PUBLIC_API_BASE_URL at build time. */
+  apiBaseUrl: string;
   appVersion: string;
   nativeAppVersion: string | null;
   nativeBuildVersion: string | null;
@@ -94,7 +100,10 @@ export function useInternalDiagnostics() {
       pushPermission = 'unavailable';
     }
 
+    const extra = getExtra();
     setSnapshot({
+      appDisplayName: typeof Constants.expoConfig?.name === 'string' ? Constants.expoConfig.name : '—',
+      apiBaseUrl: extra.apiBaseUrl || '',
       appVersion: Constants.expoConfig?.version ?? '—',
       nativeAppVersion: Application.nativeApplicationVersion,
       nativeBuildVersion: Application.nativeBuildVersion,

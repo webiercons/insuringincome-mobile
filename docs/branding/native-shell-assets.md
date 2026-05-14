@@ -2,15 +2,9 @@
 
 Raster assets in `assets/images/` referenced from `app.config.ts` and config plugins define what operators see **before** JavaScript loads: home-screen icon, splash, favicon (web export), Android adaptive layers, and the Android notification glyph.
 
-## Current placeholders
+## Current assets (Insuring Income)
 
-The repo ships **generated placeholders** (Insuring Income palette, abstract mark + wordmark). Regenerate after palette tweaks:
-
-```bash
-python3 scripts/generate-internal-branding-placeholders.py
-```
-
-Replace these files with **final design exports** before a broad external rollout. Keep filenames stable so `app.config.ts` does not need churn.
+Raster files under `assets/images/` are **Insuring Income–branded** (generated script + design tokens). For a major marketing refresh, replace files in place per the table below — **no Expo starter artwork** should ship in store binaries.
 
 ## File → role (as wired today)
 

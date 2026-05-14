@@ -1,6 +1,8 @@
-# Insuring Income — Internal Mobile (Expo)
+# Insuring Income — Mobile (Expo)
 
-Internal-only authenticated iPhone app for operators. Ships with **EAS Build / EAS Submit** to **TestFlight**, with **EAS Update** for JavaScript OTA on matching channels.
+Unified **public** and **internal operator** experience. Ships with **EAS Build / EAS Submit** to **TestFlight**, with **EAS Update** for JavaScript OTA on matching channels.
+
+The app now ships a **dual-mode shell**: a **public consumer experience** (education, quote intake, contact, uploads) that never calls privileged operator APIs, and an **authenticated operator layer** (`/(internal)/*`) that continues to use Laravel internal mobile endpoints, SecureStore sessions, and device approval.
 
 ## Prerequisites
 
@@ -22,9 +24,22 @@ See `../insuringincome/docs/env/internal-mobile.md` for the matching Laravel `IN
 
 | Doc | Purpose |
 |-----|---------|
+| `docs/architecture/shared-platform-strategy.md` | Cross-app (Insuring Income, Meddr, Espressly, Webier) shared platform strategy, package boundaries, phased roadmap. |
+| `docs/architecture/shared-mobile-platform.md` | Expo/EAS OTA, auth/device client patterns, npm package candidates. |
+| `docs/architecture/shared-laravel-foundation.md` | Laravel package candidates, API/security posture, extraction order. |
 | `docs/internal-mobile-dependency-roadmap.md` | OTA-first architecture, phased dependencies, OTA vs native-build matrix. |
 | `docs/internal-mobile-release-runbook.md` | EAS Build / Submit / Update commands, channels, rollback notes. |
 | `docs/branding/native-shell-assets.md` | Native shell branding (icons, splash, notification icon) and production asset specs. |
+
+## Routing (expo-router)
+
+| Area | Path group | Purpose |
+|------|------------|---------|
+| Public | `app/(public)/(tabs)` (+ nested stacks) | Consumer UI — no internal API token required. |
+| Auth | `app/(auth)` | Advisor / team login into operator tools. |
+| Internal | `app/(internal)` | Post-login CRM-style tabs, device pending, diagnostics. |
+
+After adding or moving route files, run **`npm run router:types`** to refresh `.expo/types/router.d.ts` (tracked for CI alongside `experiments.typedRoutes`).
 
 ## Local development
 
@@ -40,6 +55,7 @@ Use the iOS simulator or a device; the app does not target localhost/Herd for pr
 ```bash
 npm run lint
 npm run typecheck
+npm run router:types
 npm run bundle:check
 ```
 

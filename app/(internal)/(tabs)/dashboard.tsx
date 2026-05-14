@@ -4,7 +4,7 @@ import { ScreenShell } from '@/components/internal/screen-shell';
 
 export default function DashboardScreen() {
   return (
-    <ScreenShell title="Dashboard" subtitle="Operational overview">
+    <ScreenShell title="Dashboard" subtitle="Operator workspace">
         <Text style={styles.body}>
           Operational KPIs, renewals, and pipeline health will appear here once internal APIs are connected.
         </Text>

@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -31,7 +32,7 @@ function summarizeApiHost(url: string): string {
 function formatMobileAccess(access: string): string {
   switch (access) {
     case 'full':
-      return 'Approved — full internal mobile access';
+      return 'Approved — operator tools unlocked';
     case 'restricted_pending_device':
       return 'Pending — device approval required';
     case 'none':
@@ -44,6 +45,7 @@ function formatMobileAccess(access: string): string {
 }
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const { signOut, token, mobileAccess, userSummary } = useAuth();
   const extra = useMemo(() => getExtra(), []);
   const { snapshot, refresh, checkOtaAndOfferReload, otaBusy, otaCheckMessage, lastOtaProbe } =
@@ -81,7 +83,7 @@ export default function SettingsScreen() {
   const buildNumberLabel = snapshot?.platform === 'ios' ? 'iOS build number' : 'Native build number';
 
   return (
-    <ScreenShell title="Settings" subtitle="Environment, session, and diagnostics">
+    <ScreenShell title="Settings" subtitle="Operator tools, session, and diagnostics">
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scroll}
@@ -93,6 +95,19 @@ export default function SettingsScreen() {
           </Text>
           {snapshot ? (
             <>
+              <View style={styles.kv}>
+                <Text style={styles.k}>App display name</Text>
+                <Text style={styles.v}>{snapshot.appDisplayName}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>Operator API (EXPO_PUBLIC_API_BASE_URL)</Text>
+                <Text style={styles.vMono} selectable numberOfLines={4}>
+                  {snapshot.apiBaseUrl || 'Not configured'}
+                </Text>
+              </View>
+              <Text style={[styles.subtle, styles.afterApiHost]}>
+                Host: {summarizeApiHost(snapshot.apiBaseUrl)}
+              </Text>
               <View style={styles.kv}>
                 <Text style={styles.k}>App semantic version</Text>
                 <Text style={styles.vMono}>{snapshot.appVersion}</Text>
@@ -151,14 +166,6 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.block}>
-          <Text style={styles.label}>API base URL</Text>
-          <Text style={styles.valueUrl} selectable numberOfLines={4}>
-            {extra.apiBaseUrl || 'Not configured'}
-          </Text>
-          <Text style={styles.subtle}>Host: {summarizeApiHost(extra.apiBaseUrl)}</Text>
-        </View>
-
-        <View style={styles.block}>
           <Text style={styles.label}>Build-time app channel</Text>
           <Text style={styles.value}>{extra.appChannel}</Text>
           <Text style={styles.subtle}>From EXPO_PUBLIC_APP_CHANNEL at build; compare to EAS Update channel above.</Text>
@@ -186,12 +193,12 @@ export default function SettingsScreen() {
               <Text style={styles.v}>{snapshot.platform}</Text>
             </View>
             <View style={styles.kv}>
-              <Text style={styles.k}>Native SDK runtime</Text>
+              <Text style={styles.k}>Runtime (SDK) version</Text>
               <Text style={styles.vMono}>{snapshot.expoRuntime}</Text>
             </View>
             <View style={styles.kv}>
-              <Text style={styles.k}>OTA updates module</Text>
-              <Text style={styles.v}>{snapshot.updatesEnabled ? 'active' : 'inactive'}</Text>
+              <Text style={styles.k}>Over-the-air updates</Text>
+              <Text style={styles.v}>{snapshot.updatesEnabled ? 'enabled' : 'disabled'}</Text>
             </View>
             <View style={styles.kv}>
               <Text style={styles.k}>Push permission</Text>
@@ -214,8 +221,8 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>Push notifications</Text>
         <Text style={styles.note}>
-          Registers this device for mobile push delivery (EAS push infrastructure). Send the token to Laravel only
-          through approved internal channels (treat as sensitive).
+          Registers this device with Apple’s notification service. The token identifies this installation — treat it as
+          sensitive and share it only through approved internal channels.
         </Text>
         <Pressable
           onPress={() => void requestPushToken()}
@@ -244,6 +251,17 @@ export default function SettingsScreen() {
           See docs/internal-mobile-dependency-roadmap.md and docs/internal-mobile-release-runbook.md for OTA vs
           TestFlight rules and publish commands.
         </Text>
+
+        <Text style={styles.sectionTitle}>Consumer app</Text>
+        <Text style={styles.note}>
+          Browse public education, quote intake, and contact flows without leaving your signed-in session. Consumer
+          screens do not call privileged operator APIs.
+        </Text>
+        <Pressable
+          onPress={() => router.push('/(public)/(tabs)')}
+          style={({ pressed }) => [styles.secondaryBtn, pressed && styles.secondaryBtnPressed]}>
+          <Text style={styles.secondaryBtnLabel}>Open consumer home</Text>
+        </Pressable>
 
         <Pressable
           onPress={() => void signOut()}
@@ -306,18 +324,14 @@ const styles = StyleSheet.create({
     color: InternalColors.text,
     fontWeight: '600',
   },
-  valueUrl: {
-    marginTop: 6,
-    fontSize: 14,
-    lineHeight: 20,
-    color: InternalColors.text,
-    fontWeight: '500',
-  },
   subtle: {
     marginTop: 6,
     fontSize: 13,
     color: InternalColors.textMuted,
     lineHeight: 18,
+  },
+  afterApiHost: {
+    marginBottom: 12,
   },
   kv: {
     marginBottom: 10,

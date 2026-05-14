@@ -16,7 +16,8 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_APP_CHANNEL": "preview"
+        "EXPO_PUBLIC_APP_CHANNEL": "preview",
+        "EXPO_PUBLIC_API_BASE_URL": "https://app.insuringincome.com"
       }
     },
     "testflight": {
@@ -24,7 +25,8 @@
       "channel": "testflight",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_APP_CHANNEL": "testflight"
+        "EXPO_PUBLIC_APP_CHANNEL": "testflight",
+        "EXPO_PUBLIC_API_BASE_URL": "https://app.insuringincome.com"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -35,7 +37,8 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_APP_CHANNEL": "production"
+        "EXPO_PUBLIC_APP_CHANNEL": "production",
+        "EXPO_PUBLIC_API_BASE_URL": "https://app.insuringincome.com"
       },
       "ios": {
         "resourceClass": "m-medium"
