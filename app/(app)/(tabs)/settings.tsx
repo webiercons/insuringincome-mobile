@@ -28,10 +28,26 @@ function summarizeApiHost(url: string): string {
   }
 }
 
+function formatMobileAccess(access: string): string {
+  switch (access) {
+    case 'full':
+      return 'Approved — full internal mobile access';
+    case 'restricted_pending_device':
+      return 'Pending — device approval required';
+    case 'none':
+      return 'Signed out';
+    case 'unknown':
+      return 'Unknown (bootstrap incomplete)';
+    default:
+      return access;
+  }
+}
+
 export default function SettingsScreen() {
-  const { signOut } = useAuth();
+  const { signOut, token, mobileAccess, userSummary } = useAuth();
   const extra = useMemo(() => getExtra(), []);
-  const { snapshot, refresh, checkOtaAndOfferReload, otaBusy, otaCheckMessage } = useInternalDiagnostics();
+  const { snapshot, refresh, checkOtaAndOfferReload, otaBusy, otaCheckMessage, lastOtaProbe } =
+    useInternalDiagnostics();
   const [pushBusy, setPushBusy] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
   const [pushError, setPushError] = useState<string | null>(null);
@@ -62,57 +78,116 @@ export default function SettingsScreen() {
     }
   }
 
+  const buildNumberLabel = snapshot?.platform === 'ios' ? 'iOS build number' : 'Native build number';
+
   return (
     <ScreenShell title="Settings" subtitle="Environment, session, and diagnostics">
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled">
-        <View style={styles.block}>
-          <Text style={styles.label}>Release channel (build)</Text>
-          <Text style={styles.value}>{extra.appChannel}</Text>
-        </View>
-        <View style={styles.block}>
-          <Text style={styles.label}>API host</Text>
-          <Text style={styles.value}>{summarizeApiHost(extra.apiBaseUrl)}</Text>
+        <View style={styles.identityCard}>
+          <Text style={styles.identityTitle}>Build & update identity</Text>
+          <Text style={styles.identityHint}>
+            Use this block to confirm TestFlight binary vs OTA bundle, channel, and runtime alignment.
+          </Text>
+          {snapshot ? (
+            <>
+              <View style={styles.kv}>
+                <Text style={styles.k}>App semantic version</Text>
+                <Text style={styles.vMono}>{snapshot.appVersion}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>{buildNumberLabel}</Text>
+                <Text style={styles.vMono}>{snapshot.nativeBuildVersion ?? '—'}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>Native marketing version</Text>
+                <Text style={styles.vMono}>{snapshot.nativeAppVersion ?? '—'}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>OTA runtimeVersion</Text>
+                <Text style={styles.vMono}>{snapshot.updatesRuntimeVersion}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>OTA update ID</Text>
+                <Text style={styles.vMono}>{snapshot.updateId ?? '— (embedded / dev)'}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>EAS Update channel</Text>
+                <Text style={styles.vMono}>{snapshot.updatesChannel ?? '—'}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>Manifest branch (if present)</Text>
+                <Text style={styles.vMono}>{snapshot.manifestBranch ?? '—'}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>Update bundle created (UTC)</Text>
+                <Text style={styles.vMono}>{snapshot.updateCreatedAtIso ?? '—'}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>Bundle source</Text>
+                <Text style={styles.vEmphasis}>{snapshot.bundleSourceLabel}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>Last manual OTA check (UTC)</Text>
+                <Text style={styles.vMono}>{lastOtaProbe?.atIso ?? '— (not run yet)'}</Text>
+              </View>
+              <View style={styles.kv}>
+                <Text style={styles.k}>Last OTA check result</Text>
+                <Text style={styles.v}>{lastOtaProbe?.summary ?? '—'}</Text>
+              </View>
+              {snapshot.isEmergencyLaunch ? (
+                <View style={styles.warnBanner}>
+                  <Text style={styles.warnBannerText}>
+                    Emergency launch: running embedded binary. {snapshot.emergencyLaunchReason ?? ''}
+                  </Text>
+                </View>
+              ) : null}
+            </>
+          ) : (
+            <ActivityIndicator style={styles.loader} />
+          )}
         </View>
 
-        <Text style={styles.sectionTitle}>Diagnostics</Text>
+        <View style={styles.block}>
+          <Text style={styles.label}>API base URL</Text>
+          <Text style={styles.valueUrl} selectable numberOfLines={4}>
+            {extra.apiBaseUrl || 'Not configured'}
+          </Text>
+          <Text style={styles.subtle}>Host: {summarizeApiHost(extra.apiBaseUrl)}</Text>
+        </View>
+
+        <View style={styles.block}>
+          <Text style={styles.label}>Build-time app channel</Text>
+          <Text style={styles.value}>{extra.appChannel}</Text>
+          <Text style={styles.subtle}>From EXPO_PUBLIC_APP_CHANNEL at build; compare to EAS Update channel above.</Text>
+        </View>
+
+        <Text style={styles.sectionTitle}>Session & device</Text>
+        <View style={styles.kv}>
+          <Text style={styles.k}>Auth status</Text>
+          <Text style={styles.v}>{token ? 'Signed in (token in SecureStore)' : 'Signed out'}</Text>
+        </View>
+        <View style={styles.kv}>
+          <Text style={styles.k}>Device / mobile access</Text>
+          <Text style={styles.v}>{formatMobileAccess(mobileAccess)}</Text>
+        </View>
+        <View style={styles.kv}>
+          <Text style={styles.k}>Operator email</Text>
+          <Text style={styles.v}>{userSummary?.email ?? '—'}</Text>
+        </View>
+
+        <Text style={styles.sectionTitle}>Runtime</Text>
         {snapshot ? (
           <>
-            <View style={styles.kv}>
-              <Text style={styles.k}>expo.version</Text>
-              <Text style={styles.v}>{snapshot.appVersion}</Text>
-            </View>
-            <View style={styles.kv}>
-              <Text style={styles.k}>Native app / build</Text>
-              <Text style={styles.v}>
-                {snapshot.nativeAppVersion ?? '—'} ({snapshot.nativeBuildVersion ?? '—'})
-              </Text>
-            </View>
             <View style={styles.kv}>
               <Text style={styles.k}>Platform</Text>
               <Text style={styles.v}>{snapshot.platform}</Text>
             </View>
             <View style={styles.kv}>
               <Text style={styles.k}>Expo runtime</Text>
-              <Text style={styles.v}>{snapshot.expoRuntime}</Text>
-            </View>
-            <View style={styles.kv}>
-              <Text style={styles.k}>EAS Update channel</Text>
-              <Text style={styles.v}>{snapshot.updatesChannel ?? '—'}</Text>
-            </View>
-            <View style={styles.kv}>
-              <Text style={styles.k}>Updates runtime version</Text>
-              <Text style={styles.v}>{snapshot.updatesRuntimeVersion}</Text>
-            </View>
-            <View style={styles.kv}>
-              <Text style={styles.k}>Current update id</Text>
-              <Text style={styles.v}>{snapshot.updateId ?? 'embedded / none'}</Text>
-            </View>
-            <View style={styles.kv}>
-              <Text style={styles.k}>Embedded launch</Text>
-              <Text style={styles.v}>{snapshot.isEmbeddedLaunch ? 'yes' : 'no'}</Text>
+              <Text style={styles.vMono}>{snapshot.expoRuntime}</Text>
             </View>
             <View style={styles.kv}>
               <Text style={styles.k}>expo-updates enabled</Text>
@@ -123,9 +198,7 @@ export default function SettingsScreen() {
               <Text style={styles.v}>{snapshot.pushPermission}</Text>
             </View>
           </>
-        ) : (
-          <ActivityIndicator style={styles.loader} />
-        )}
+        ) : null}
 
         <Pressable
           onPress={() => void checkOtaAndOfferReload()}
@@ -191,11 +264,31 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 0,
   },
+  identityCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: InternalColors.border,
+    backgroundColor: InternalColors.surface,
+    padding: 16,
+    marginBottom: 20,
+  },
+  identityTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: InternalColors.text,
+    marginBottom: 6,
+  },
+  identityHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: InternalColors.textMuted,
+    marginBottom: 14,
+  },
   block: {
     marginBottom: 16,
   },
   sectionTitle: {
-    marginTop: 20,
+    marginTop: 8,
     marginBottom: 10,
     fontSize: 15,
     fontWeight: '700',
@@ -214,15 +307,28 @@ const styles = StyleSheet.create({
     color: InternalColors.text,
     fontWeight: '600',
   },
+  valueUrl: {
+    marginTop: 6,
+    fontSize: 14,
+    lineHeight: 20,
+    color: InternalColors.text,
+    fontWeight: '500',
+  },
+  subtle: {
+    marginTop: 6,
+    fontSize: 13,
+    color: InternalColors.textMuted,
+    lineHeight: 18,
+  },
   kv: {
     marginBottom: 10,
   },
   k: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: InternalColors.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.55,
   },
   v: {
     marginTop: 4,
@@ -230,8 +336,35 @@ const styles = StyleSheet.create({
     color: InternalColors.text,
     lineHeight: 20,
   },
+  vMono: {
+    marginTop: 4,
+    fontSize: 14,
+    lineHeight: 20,
+    color: InternalColors.text,
+    fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+  },
+  vEmphasis: {
+    marginTop: 4,
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '600',
+    color: InternalColors.accent,
+  },
   loader: {
     marginVertical: 12,
+  },
+  warnBanner: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#fff7ed',
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  warnBannerText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#9a3412',
   },
   secondaryBtn: {
     marginTop: 12,

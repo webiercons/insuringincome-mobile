@@ -2,6 +2,8 @@
 
 Operational guide for **EAS Build**, **EAS Submit**, and **EAS Update** (OTA) for the Insuring Income internal app.
 
+The app sets **`updates.checkAutomatically` to `NEVER`** in `app.config.ts`: operators **manually** check for updates from **Settings** so nothing downloads or reloads during sensitive work without explicit confirmation.
+
 ## Branch / channel map
 
 | Git branch (recommended) | EAS Update **channel** | Typical **EAS Build** profile |

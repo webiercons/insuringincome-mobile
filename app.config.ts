@@ -81,7 +81,7 @@ export default (): ExpoConfig => {
     updates: {
       url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
       enabled: true,
-      checkAutomatically: 'ON_LOAD',
+      checkAutomatically: 'NEVER',
       fallbackToCacheTimeout: 0,
     },
     runtimeVersion: {
