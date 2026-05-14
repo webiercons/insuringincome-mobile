@@ -20,6 +20,9 @@ export default (): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.insuringincome.internal.app',
+      config: {
+        usesNonExemptEncryption: false,
+      },
     },
     android: {
       adaptiveIcon: {

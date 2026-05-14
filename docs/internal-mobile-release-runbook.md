@@ -31,6 +31,12 @@ eas submit --platform ios --profile testflight --latest
 
 Bump **`expo.version`** in `app.config.ts` when you intentionally cut a new **runtime** line for OTA (with `runtimeVersion: { policy: 'appVersion' }`, OTAs only apply to binaries with that same version).
 
+### App Store export compliance (ITSAppUsesNonExemptEncryption)
+
+`app.config.ts` sets **`ios.config.usesNonExemptEncryption: false`**, which maps to **`ITSAppUsesNonExemptEncryption = NO`** in the iOS `Info.plist`. That tells App Store Connect the app uses **only exempt encryption** (for example HTTPS/TLS and standard Apple or Expo-provided APIs), so Connect is less likely to **re-prompt** for the same export-compliance questionnaire on every TestFlight or App Store submission.
+
+This matches the current app: **HTTPS only**, no proprietary crypto. **If a future feature adds non-exempt encryption** (custom crypto, specialized tunneling beyond normal TLS, or other categories your counsel flags), update this declaration and complete any required compliance steps before shipping.
+
 ## Publish OTA (no native change)
 
 **Preview / internal QA**
