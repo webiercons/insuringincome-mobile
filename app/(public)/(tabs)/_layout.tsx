@@ -1,22 +1,40 @@
 import { Tabs } from 'expo-router';
+import { useMemo } from 'react';
+import { Platform } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { PublicColors } from '@/constants/public-theme';
+import { usePublicPalette } from '@/hooks/use-public-palette';
 
 export default function PublicTabsLayout() {
+  const p = usePublicPalette();
+  const screenOptions = useMemo(
+    () => ({
+      headerShown: false,
+      tabBarActiveTintColor: p.accent,
+      tabBarInactiveTintColor: p.textMuted,
+      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' as const },
+      tabBarStyle: {
+        backgroundColor: p.surface,
+        borderTopColor: p.border,
+        paddingTop: 4,
+        ...Platform.select({
+          ios: {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 6,
+          },
+          default: {},
+        }),
+      },
+      tabBarButton: HapticTab,
+    }),
+    [p],
+  );
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: PublicColors.accent,
-        tabBarInactiveTintColor: PublicColors.textMuted,
-        tabBarStyle: {
-          backgroundColor: PublicColors.surface,
-          borderTopColor: PublicColors.border,
-        },
-        tabBarButton: HapticTab,
-      }}>
+    <Tabs screenOptions={screenOptions}>
       <Tabs.Screen
         name="index"
         options={{
@@ -27,7 +45,7 @@ export default function PublicTabsLayout() {
       <Tabs.Screen
         name="resources"
         options={{
-          title: 'Explore',
+          title: 'Resources',
           tabBarIcon: ({ color }) => <IconSymbol size={24} name="book.fill" color={color} />,
         }}
       />

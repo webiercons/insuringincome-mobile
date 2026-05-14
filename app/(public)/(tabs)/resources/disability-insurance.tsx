@@ -1,61 +1,47 @@
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 
+import { EducationTopicCard } from '@/components/public/education-topic-card';
 import { PublicScreenShell } from '@/components/public/public-screen-shell';
-import { PublicColors } from '@/constants/public-theme';
+import { TrustFootnote } from '@/components/public/trust-footnote';
+import { getEducationTopicsForScreen } from '@/constants/public-education-content';
+import { PublicLayout } from '@/constants/public-layout';
+import { usePublicPalette } from '@/hooks/use-public-palette';
 
 export default function DisabilityInsuranceScreen() {
+  const palette = usePublicPalette();
+  const styles = useMemo(() => createStyles(palette), [palette]);
+  const topics = getEducationTopicsForScreen('disability');
+
   return (
-    <PublicScreenShell showBack title="Disability insurance" subtitle="Income when you cannot work due to illness or injury.">
+    <PublicScreenShell
+      showBack
+      title="Disability insurance"
+      subtitle="Income when you cannot work — framed for clinical careers.">
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.lead}>
-          Most households spend every paycheck within weeks. A long-term disability can exhaust savings faster than almost
-          any other risk—yet group LTD through an employer often caps benefits and uses taxable definitions you should
-          review with a professional.
+          Employer group LTD is a start, but benefit caps, tax treatment, and definition language may not match your
+          specialty or earnings curve. Use these cards to align vocabulary with your advisor before illustrations.
         </Text>
-        <Section
-          k="Core definitions"
-          p="Benefit amount, elimination (waiting) period, benefit period, and definition of disability (own-occupation vs any-occupation) determine when and how much the carrier pays."
-        />
-        <Section
-          k="Partial and residual"
-          p="Many contracts include partial disability benefits if you return to work at reduced earnings. Residual riders can bridge the gap during recovery."
-        />
-        <Section
-          k="Underwriting"
-          p="Occupation class, health history, and financial documentation influence offer and premium. Expect a fluid process with your advisor—not instant bind from an app screen."
-        />
+        {topics.map((t) => (
+          <EducationTopicCard key={t.id} palette={palette} lens={t.lens} title={t.title} body={t.body} />
+        ))}
+        <TrustFootnote palette={palette}>
+          Definitions and offers vary by carrier and state. Nothing here is a solicitation or guarantee of coverage.
+        </TrustFootnote>
       </ScrollView>
     </PublicScreenShell>
   );
 }
 
-function Section({ k, p }: { k: string; p: string }) {
-  return (
-    <>
-      <Text style={styles.h}>{k}</Text>
-      <Text style={styles.p}>{p}</Text>
-    </>
-  );
+function createStyles(p: ReturnType<typeof usePublicPalette>) {
+  return StyleSheet.create({
+    scroll: { paddingBottom: 40 },
+    lead: {
+      fontSize: 15,
+      lineHeight: 23,
+      color: p.text,
+      marginBottom: PublicLayout.gapMd,
+    },
+  });
 }
-
-const styles = StyleSheet.create({
-  scroll: { paddingBottom: 40 },
-  lead: {
-    fontSize: 15,
-    lineHeight: 23,
-    color: PublicColors.text,
-    marginBottom: 8,
-  },
-  h: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: PublicColors.text,
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  p: {
-    fontSize: 15,
-    lineHeight: 23,
-    color: PublicColors.textMuted,
-  },
-});

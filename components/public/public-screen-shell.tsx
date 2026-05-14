@@ -1,8 +1,11 @@
+import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, type ViewProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PublicColors } from '@/constants/public-theme';
+import { PublicLayout } from '@/constants/public-layout';
+import type { PublicPalette } from '@/constants/public-theme';
+import { usePublicPalette } from '@/hooks/use-public-palette';
 
 type PublicScreenShellProps = ViewProps & {
   title: string;
@@ -13,6 +16,8 @@ type PublicScreenShellProps = ViewProps & {
 
 export function PublicScreenShell({ title, subtitle, children, style, showBack, ...rest }: PublicScreenShellProps) {
   const router = useRouter();
+  const palette = usePublicPalette();
+  const styles = useMemo(() => createStyles(palette), [palette]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -34,52 +39,54 @@ export function PublicScreenShell({ title, subtitle, children, style, showBack, 
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: PublicColors.canvas,
-  },
-  topBar: {
-    paddingHorizontal: 8,
-    paddingTop: 4,
-    paddingBottom: 4,
-  },
-  back: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-  backLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: PublicColors.accent,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: PublicColors.border,
-    backgroundColor: PublicColors.surface,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: PublicColors.text,
-    letterSpacing: -0.35,
-  },
-  subtitle: {
-    marginTop: 6,
-    fontSize: 15,
-    lineHeight: 22,
-    color: PublicColors.textMuted,
-  },
-  body: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    backgroundColor: PublicColors.canvas,
-  },
-});
+function createStyles(p: PublicPalette) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: p.canvas,
+    },
+    topBar: {
+      paddingHorizontal: 8,
+      paddingTop: 4,
+      paddingBottom: 4,
+    },
+    back: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    pressed: {
+      opacity: 0.75,
+    },
+    backLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: p.accent,
+    },
+    header: {
+      paddingHorizontal: PublicLayout.screenPaddingX,
+      paddingBottom: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: p.border,
+      backgroundColor: p.surface,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: '700',
+      color: p.text,
+      letterSpacing: -0.45,
+    },
+    subtitle: {
+      marginTop: 8,
+      fontSize: 15,
+      lineHeight: 22,
+      color: p.textMuted,
+    },
+    body: {
+      flex: 1,
+      paddingHorizontal: PublicLayout.screenPaddingX,
+      paddingTop: PublicLayout.sectionGap,
+      backgroundColor: p.canvas,
+    },
+  });
+}

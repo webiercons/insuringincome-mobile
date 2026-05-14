@@ -1,54 +1,46 @@
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 
+import { EducationTopicCard } from '@/components/public/education-topic-card';
 import { PublicScreenShell } from '@/components/public/public-screen-shell';
-import { PublicColors } from '@/constants/public-theme';
+import { TrustFootnote } from '@/components/public/trust-footnote';
+import { getEducationTopicsForScreen } from '@/constants/public-education-content';
+import { PublicLayout } from '@/constants/public-layout';
+import { usePublicPalette } from '@/hooks/use-public-palette';
 
 export default function LearnScreen() {
+  const palette = usePublicPalette();
+  const styles = useMemo(() => createStyles(palette), [palette]);
+  const topics = getEducationTopicsForScreen('learn');
+
   return (
-    <PublicScreenShell showBack title="Learn" subtitle="Plain-language foundations for confident decisions.">
+    <PublicScreenShell showBack title="Learn" subtitle="Foundations for confident, time-boxed reading.">
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Section k="Why coverage exists" p="Insurance transfers catastrophic financial risk you cannot self-fund to a carrier contractually obligated to pay when defined events occur." />
-        <Section
-          k="Disability vs life"
-          p="Disability insurance protects your ability to earn. Life insurance protects others from the economic loss of your death. Many households need both, in different amounts."
-        />
-        <Section
-          k="Working with an advisor"
-          p="Carriers and product shelves vary by state. A licensed advisor helps you compare illustrations, definitions, and riders rather than choosing from marketing pages alone."
-        />
-        <Section
-          k="Next step"
-          p="When you are ready, use Quote to outline your goals or Contact to schedule a consultation. Nothing here requires sign-in."
-        />
+        <Text style={styles.lead}>
+          Each card is a discrete topic — later versions can hydrate the same IDs from CMS or a public content API
+          without changing routes.
+        </Text>
+        {topics.map((t) => (
+          <EducationTopicCard key={t.id} palette={palette} lens={t.lens} title={t.title} body={t.body} />
+        ))}
+        <TrustFootnote palette={palette}>
+          Education is general in nature and not personalized advice. State rules and product availability vary.
+        </TrustFootnote>
       </ScrollView>
     </PublicScreenShell>
   );
 }
 
-function Section({ k, p }: { k: string; p: string }) {
-  return (
-    <>
-      <Text style={styles.h}>{k}</Text>
-      <Text style={styles.p}>{p}</Text>
-    </>
-  );
+function createStyles(p: ReturnType<typeof usePublicPalette>) {
+  return StyleSheet.create({
+    scroll: {
+      paddingBottom: 40,
+    },
+    lead: {
+      fontSize: 15,
+      lineHeight: 23,
+      color: p.textMuted,
+      marginBottom: PublicLayout.gapMd,
+    },
+  });
 }
-
-const styles = StyleSheet.create({
-  scroll: {
-    paddingBottom: 40,
-    gap: 0,
-  },
-  h: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: PublicColors.text,
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  p: {
-    fontSize: 15,
-    lineHeight: 23,
-    color: PublicColors.textMuted,
-  },
-});
