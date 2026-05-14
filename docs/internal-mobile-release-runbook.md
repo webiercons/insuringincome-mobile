@@ -37,6 +37,12 @@ Bump **`expo.version`** in `app.config.ts` when you intentionally cut a new **ru
 
 This matches the current app: **HTTPS only**, no proprietary crypto. **If a future feature adds non-exempt encryption** (custom crypto, specialized tunneling beyond normal TLS, or other categories your counsel flags), update this declaration and complete any required compliance steps before shipping.
 
+### Native shell branding (icons, splash, notification icon)
+
+Changes under `assets/images/` that feed **`app.config.ts`** (`icon`, `web.favicon`, `android.adaptiveIcon`, **`expo-splash-screen`**, **`expo-notifications`**) are **native-build-required**: cut a **new EAS iOS build** and distribute via TestFlight before operators see them. OTA can still refresh in-app UI and JS-loaded images, but the store icon, launch splash, and Android notification glyph ship with the binary.
+
+Regenerate committed **placeholder** rasters with `python3 scripts/generate-internal-branding-placeholders.py` after palette tweaks. Replace with final marketing assets per `docs/branding/native-shell-assets.md`.
+
 ## Publish OTA (no native change)
 
 **Preview / internal QA**

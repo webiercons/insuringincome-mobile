@@ -24,6 +24,7 @@ See `../insuringincome/docs/env/internal-mobile.md` for the matching Laravel `IN
 |-----|---------|
 | `docs/internal-mobile-dependency-roadmap.md` | OTA-first architecture, phased dependencies, OTA vs native-build matrix. |
 | `docs/internal-mobile-release-runbook.md` | EAS Build / Submit / Update commands, channels, rollback notes. |
+| `docs/branding/native-shell-assets.md` | Native shell branding (icons, splash, notification icon) and production asset specs. |
 
 ## Local development
 

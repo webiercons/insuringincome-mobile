@@ -5,7 +5,9 @@ import { ScreenShell } from '@/components/internal/screen-shell';
 export default function TasksScreen() {
   return (
     <ScreenShell title="Tasks" subtitle="Follow-ups and SLAs">
-      <Text style={styles.body}>Placeholder: sync tasks from CRM or ticketing once endpoints exist.</Text>
+      <Text style={styles.body}>
+        Tasks from CRM or ticketing will sync here once internal endpoints are available.
+      </Text>
     </ScreenShell>
   );
 }

@@ -1,6 +1,6 @@
 # Internal mobile — dependency roadmap & OTA-first architecture
 
-This document aligns **Insuring Income (Internal)** Expo app dependencies with an **OTA-first** delivery model: ship JS, navigation, styling, copy, and most asset changes via **EAS Update**; reserve **EAS Build / TestFlight** for native surface changes.
+This document aligns the **Insuring Income** internal mobile app (Expo) dependencies with an **OTA-first** delivery model: ship JS, navigation, styling, copy, and most asset changes via **EAS Update**; reserve **EAS Build / TestFlight** for native surface changes.
 
 ## Principles
 

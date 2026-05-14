@@ -5,7 +5,9 @@ import { ScreenShell } from '@/components/internal/screen-shell';
 export default function LeadsScreen() {
   return (
     <ScreenShell title="Leads" subtitle="Inbound and outbound pipeline">
-      <Text style={styles.body}>Placeholder: connect lead queues, filters, and assignment rules.</Text>
+      <Text style={styles.body}>
+        Lead queues, filters, and assignment rules will load here once internal endpoints are available.
+      </Text>
     </ScreenShell>
   );
 }

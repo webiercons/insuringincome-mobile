@@ -5,9 +5,9 @@ import { ScreenShell } from '@/components/internal/screen-shell';
 export default function DashboardScreen() {
   return (
     <ScreenShell title="Dashboard" subtitle="Operational overview">
-      <Text style={styles.body}>
-        Placeholder: wire KPIs, renewals, and pipeline health once backend endpoints are ready.
-      </Text>
+        <Text style={styles.body}>
+          Operational KPIs, renewals, and pipeline health will appear here once internal APIs are connected.
+        </Text>
     </ScreenShell>
   );
 }

@@ -9,7 +9,7 @@ export default (): ExpoConfig => {
     (process.env.EXPO_PUBLIC_INTERNAL_MOBILE_PASSWORD_AUTH_ENABLED ?? '').toLowerCase() === 'true';
 
   return {
-    name: 'Insuring Income (Internal)',
+    name: 'Insuring Income',
     slug: 'insuringincome-mobile',
     version: '1.0.0',
     orientation: 'portrait',
@@ -20,13 +20,16 @@ export default (): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.insuringincome.internal.app',
+      infoPlist: {
+        CFBundleDisplayName: 'Insuring Income',
+      },
       config: {
         usesNonExemptEncryption: false,
       },
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: '#1a2b45',
+        backgroundColor: '#1c3d6b',
         foregroundImage: './assets/images/android-icon-foreground.png',
         backgroundImage: './assets/images/android-icon-background.png',
         monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -46,18 +49,18 @@ export default (): ExpoConfig => {
       [
         'expo-notifications',
         {
-          icon: './assets/images/icon.png',
-          color: '#1a2b45',
+          icon: './assets/images/notification-icon.png',
+          color: '#1c3d6b',
           enableBackgroundRemoteNotifications: false,
         },
       ],
       [
         'expo-splash-screen',
         {
-          image: './assets/images/splash-icon.png',
-          imageWidth: 200,
+          image: './assets/images/splash-logo.png',
+          imageWidth: 220,
           resizeMode: 'contain',
-          backgroundColor: '#f4f6f8',
+          backgroundColor: '#0f1419',
           dark: {
             backgroundColor: '#0f1419',
           },

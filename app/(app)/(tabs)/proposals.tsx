@@ -5,7 +5,9 @@ import { ScreenShell } from '@/components/internal/screen-shell';
 export default function ProposalsScreen() {
   return (
     <ScreenShell title="Proposals" subtitle="Draft and issued proposals">
-      <Text style={styles.body}>Placeholder: list proposals with status, carrier, and premium summaries.</Text>
+      <Text style={styles.body}>
+        Proposals with status, carrier, and premium summaries will list here once internal APIs are connected.
+      </Text>
     </ScreenShell>
   );
 }

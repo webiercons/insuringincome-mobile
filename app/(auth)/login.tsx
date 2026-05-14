@@ -97,8 +97,8 @@ export default function LoginScreen() {
           />
         ) : (
           <Text style={styles.mutedBlock}>
-            Google sign-in is not configured for this build. Add Expo public Google client IDs for your
-            platform.
+            Google sign-in is not configured for this build. Add the public Google OAuth client IDs
+            (`EXPO_PUBLIC_GOOGLE_*`) for this platform in the build environment.
           </Text>
         )}
 

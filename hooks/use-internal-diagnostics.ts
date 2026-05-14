@@ -129,7 +129,8 @@ export function useInternalDiagnostics() {
   const checkOtaAndOfferReload = useCallback(async () => {
     setOtaCheckMessage(null);
     if (__DEV__) {
-      const msg = 'OTA is not applied in Expo Go / dev by default; use a release build with expo-updates enabled.';
+      const msg =
+        'OTA updates do not apply in local development by default. Install a TestFlight or release build with OTA enabled to verify update delivery.';
       setOtaCheckMessage(msg);
       recordOtaProbe(msg);
       return;

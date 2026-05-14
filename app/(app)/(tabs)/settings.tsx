@@ -186,12 +186,12 @@ export default function SettingsScreen() {
               <Text style={styles.v}>{snapshot.platform}</Text>
             </View>
             <View style={styles.kv}>
-              <Text style={styles.k}>Expo runtime</Text>
+              <Text style={styles.k}>Native SDK runtime</Text>
               <Text style={styles.vMono}>{snapshot.expoRuntime}</Text>
             </View>
             <View style={styles.kv}>
-              <Text style={styles.k}>expo-updates enabled</Text>
-              <Text style={styles.v}>{snapshot.updatesEnabled ? 'yes' : 'no'}</Text>
+              <Text style={styles.k}>OTA updates module</Text>
+              <Text style={styles.v}>{snapshot.updatesEnabled ? 'active' : 'inactive'}</Text>
             </View>
             <View style={styles.kv}>
               <Text style={styles.k}>Push permission</Text>
@@ -212,10 +212,10 @@ export default function SettingsScreen() {
         </Pressable>
         {otaCheckMessage ? <Text style={styles.hint}>{otaCheckMessage}</Text> : null}
 
-        <Text style={styles.sectionTitle}>Push (Expo)</Text>
+        <Text style={styles.sectionTitle}>Push notifications</Text>
         <Text style={styles.note}>
-          Registers this device with Expo push services. Send the token to Laravel only through approved internal
-          channels (treat as sensitive).
+          Registers this device for mobile push delivery (EAS push infrastructure). Send the token to Laravel only
+          through approved internal channels (treat as sensitive).
         </Text>
         <Pressable
           onPress={() => void requestPushToken()}
@@ -224,7 +224,7 @@ export default function SettingsScreen() {
           {pushBusy ? (
             <ActivityIndicator color={InternalColors.accent} />
           ) : (
-            <Text style={styles.secondaryBtnLabel}>Request permission & show Expo push token</Text>
+            <Text style={styles.secondaryBtnLabel}>Request permission & show push token</Text>
           )}
         </Pressable>
         {pushError ? <Text style={styles.warn}>{pushError}</Text> : null}
@@ -236,9 +236,8 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>Operator file flows (next)</Text>
         <Text style={styles.note}>
-          Installed for upcoming features: expo-document-picker, expo-file-system, expo-sharing. First use in
-          product code may still require UX review; native modules ship after the next store build that includes
-          them.
+          Installed for upcoming features: document picker, on-device file access, and sharing. First use in product
+          code may still require UX review; native modules ship after the next store build that includes them.
         </Text>
 
         <Text style={styles.note}>
